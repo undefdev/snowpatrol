@@ -32,6 +32,18 @@ function write_tsv_image( filename, imageData )
 	assert( file:write( table.concat( fileTable, '\n', 0 ) ) )
 end
 
+function remove_box_from_imageData( imageData, x, y, w, h )
+	return imageData:mapPixel( function()  return 0, 0, 0, 0.5  end, x, y, w, h )
+end
+function apply_threshold_to_imageData( imageData, threshold )
+	return imageData:mapPixel( function( x, y, r, g, b, a )
+		if b<threshold  then
+			return 0, 0, 0, a
+		end
+		return r, g, b, a
+	end )
+end
+
 function love.load()
 	love.mouse.setVisible( false )
 	t = 0
@@ -41,9 +53,14 @@ function love.load()
 	--write_tsv_image( "test_out.tsv", heatmap_score.data )
 	--do return love.event.quit() end
 	heatmap_link = read_tsv_image( "link.tsv", W, H )
+	shader_threshold = love.graphics.newShader"threshold.glsl"
+	shader_red = love.graphics.newShader"threshold_red.glsl"
 	isShowingImages = true
 	isShowingHeatmaps = true
 	removeMode = 0
+	threshold = 0.1
+	shader = shader_threshold
+	shader:send( "threshold", threshold )
 end
 
 function love.update( dt )
@@ -58,8 +75,10 @@ function love.draw()
 		love.graphics.draw( img, W*ratio, 0, 0, H/he*ratio, H/he*ratio )
 	end
 	if isShowingHeatmaps then
+		love.graphics.setShader( shader )
 		love.graphics.draw( heatmap_score.img, 0, 0, 0, ratio, ratio )
 		love.graphics.draw( heatmap_link.img, ratio*W, 0, 0, ratio, ratio )
+		love.graphics.setShader()
 	end
 	local mx, my = love.mouse.getPosition()
 	local mode = { "LR", "L", "R" }
@@ -88,6 +107,10 @@ keys = {
 	r = function()  removeMode = (removeMode + 1)%4;  if removeMode==0 and boxX then  boxX, boxY = nil  end  end,
 	space = function()  isShowingImages = not isShowingImages  end,
 	m = function()  isShowingHeatmaps = not isShowingHeatmaps  end,
+	tab = function()
+		shader = shader==shader_threshold and shader_red or shader_threshold
+		shader:send( "threshold", threshold )
+	end,
 }
 
 function love.mousepressed( x, y, l, r )
