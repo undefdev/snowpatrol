@@ -18,6 +18,9 @@ function love.load()
 	threshold = 0.01
 	shader = shader_threshold
 	shader:send( "threshold", threshold )
+
+	hmscr = read_compressed_tsv_image( "test_TSV/test.tsv.gz", W, H )
+	write_compressed_tsv_image( "fooo", hmscr.data )
 end
 
 function love.update( dt )

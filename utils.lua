@@ -5,7 +5,7 @@ function read_compressed_tsv_image( filename, width, height )
 	local decompressedData = love.data.decompress( "string", "gzip", file )
 	local y = 0
 	for line in decompressedData:gmatch"(.-)\n" do
-		x = 0
+		local x = 0
 		for val in line:gmatch"%S+" do
 			val = tonumber( val )
 			local r = val>=0.5 and val or 0
@@ -17,24 +17,40 @@ function read_compressed_tsv_image( filename, width, height )
 	end
 	return { img = love.graphics.newImage( imageData ), data = imageData }
 end
-function read_tsv_image( filename, width, height )
-	local score_text = love.filesystem.newFile( filename )
-	local imageData = love.image.newImageData( width, height, "rgba32f" )
-	local y = 0
-	for line in score_text:lines() do
-		x = 0
-		for val in line:gmatch"%S+" do
-			val = tonumber( val )
-			local r = val>=0.5 and val or 0
-			local g = val<0.5 and val or 0
-			imageData:setPixel( x, y, r, g, val, 0.5 )
-			x = x + 1
+function write_compressed_tsv_image( filename, imageData )
+	local w, h = imageData:getDimensions()
+	local file = love.filesystem.newFile( filename, "w" )
+	local fileTable = {}
+	for y=0, h - 1 do
+		local line, _ = {}
+		for x=0, w - 1 do
+			local _, _, v = imageData:getPixel( x, y )
+			-- our input only has nine digits, so our output should too
+			line[x] = v==0 and 0 or ("%.9f"):format( v )
 		end
-		y = y + 1
+		fileTable[y] = table.concat( line, '\t', 0 )
 	end
-	return { img = love.graphics.newImage( imageData ), data = imageData }
+	local compressedData = love.data.compress( "string", "gzip", table.concat( fileTable, '\n', 0 ) )
+	assert( file:write( compressedData ) )
 end
 
+function read_tsv_image( filename, width, height )
+	local file = love.filesystem.newFile( filename )
+	local imageData = love.image.newImageData( width, height, "rgba32f" )
+	local y = 0
+	for line in file:lines() do
+		local x = 0
+		for val in line:gmatch"%S+" do
+			val = tonumber( val )
+			local r = val>=0.5 and val or 0
+			local g = val<0.5 and val or 0
+			imageData:setPixel( x, y, r, g, val, 0.5 )
+			x = x + 1
+		end
+		y = y + 1
+	end
+	return { img = love.graphics.newImage( imageData ), data = imageData }
+end
 function write_tsv_image( filename, imageData )
 	local w, h = imageData:getDimensions()
 	local file = love.filesystem.newFile( filename, "w" )
@@ -42,7 +58,9 @@ function write_tsv_image( filename, imageData )
 	for y=0, h - 1 do
 		local line, _ = {}
 		for x=0, w - 1 do
-			_, _, line[x] = imageData:getPixel( x, y )
+			local _, _, v = imageData:getPixel( x, y )
+			-- our input only has nine digits, so our output should too
+			line[x] = v==0 and 0 or ("%.9f"):format( v )
 		end
 		fileTable[y] = table.concat( line, '\t', 0 )
 	end
