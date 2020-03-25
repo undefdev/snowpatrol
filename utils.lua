@@ -1,4 +1,39 @@
 
+function getFilesystemTree( dir, paths )  paths = paths or {}
+	local files = love.filesystem.getDirectoryItems( dir )
+	for k, name in ipairs( files ) do
+		local item = dir .. "/" .. name
+		if love.filesystem.getInfo( item, "directory" ) then
+			getFilesystemTree( item, paths )
+		end
+		paths[#paths+1] = item
+	end
+	return paths
+end
+function filter( list, filterFunction )
+	local ret = {}
+	for _, item in ipairs( list ) do
+		if filterFunction( item ) then
+			ret[#ret + 1] = item
+		end
+	end
+	return ret
+end
+function getGZs( dir )
+	local tree = getFilesystemTree( dir )
+	return filter( tree, function( s )  return s:match"%.gz$"  end )
+end
+do
+	local imageExtensions = { jpeg = true, jpg = true, png = true }
+	local function hasImageExtension( s )
+		return imageExtensions[(s:match"%.(%w+)$" or "not an image"):lower()]
+	end
+	function getImages( dir )
+		local tree = getFilesystemTree( dir )
+		return filter( tree, hasImageExtension  )
+	end
+end
+
 function read_tsv_image( filename, width, height, compression )
 	local imageData = love.image.newImageData( width, height, "rgba32f" )
 	local file = love.filesystem.read( "string", filename )

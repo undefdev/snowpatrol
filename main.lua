@@ -18,6 +18,32 @@ function love.load()
 	threshold = 0.01
 	shader = shader_threshold
 	shader:send( "threshold", threshold )
+
+	--files = getGZs"japanese_TSV"
+	--files = getImages"japanese"
+	--for _, v in ipairs( files ) do
+	--	print( v )
+	--end
+	dataSet = newDataset"japanese"
+end
+
+function newDataset( dir )
+	local tsvDir = dir .. "_TSV"
+	local filenames = getImages"japanese"
+	local dataSet = {}
+	for k, name in ipairs( filenames ) do
+		local img = love.graphics.newImage( name )
+		local w, h = img:getDimensions()
+		local prefix = name:gsub( dir, tsvDir )
+		print( k )
+		dataSet[k] = {
+			img = img,
+			--region   = read_tsv_image( prefix .. "_region.tsv.gz",   w, h, "gzip" ),
+			--affinity = read_tsv_image( prefix .. "_affinity.tsv.gz", w, h, "gzip" ),
+			name = name
+		}
+	end
+	return dataSet
 end
 
 function love.update( dt )
