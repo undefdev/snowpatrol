@@ -1,10 +1,11 @@
 
-function read_compressed_tsv_image( filename, width, height )
+function read_tsv_image( filename, width, height, compression )
 	local imageData = love.image.newImageData( width, height, "rgba32f" )
 	local file = love.filesystem.read( "string", filename )
-	local decompressedData = love.data.decompress( "string", "gzip", file )
+	local tsv = compression and love.data.decompress( "string", compression, file )
+							or  file
 	local y = 0
-	for line in decompressedData:gmatch"(.-)\n" do
+	for line in tsv:gmatch"(.-)\n" do
 		local x = 0
 		for val in line:gmatch"%S+" do
 			val = tonumber( val )
@@ -17,7 +18,7 @@ function read_compressed_tsv_image( filename, width, height )
 	end
 	return { img = love.graphics.newImage( imageData ), data = imageData }
 end
-function write_compressed_tsv_image( filename, imageData )
+function write_tsv_image( filename, imageData, compression )
 	local w, h = imageData:getDimensions()
 	local file = love.filesystem.newFile( filename, "w" )
 	local fileTable = {}
@@ -30,41 +31,10 @@ function write_compressed_tsv_image( filename, imageData )
 		end
 		fileTable[y] = table.concat( line, '\t', 0 )
 	end
-	local compressedData = love.data.compress( "string", "gzip", table.concat( fileTable, '\n', 0 ) )
-	assert( file:write( compressedData ) )
-end
-
-function read_tsv_image( filename, width, height )
-	local file = love.filesystem.newFile( filename )
-	local imageData = love.image.newImageData( width, height, "rgba32f" )
-	local y = 0
-	for line in file:lines() do
-		local x = 0
-		for val in line:gmatch"%S+" do
-			val = tonumber( val )
-			local r = val>=0.5 and val or 0
-			local g = val<0.5 and val or 0
-			imageData:setPixel( x, y, r, g, val, 0.5 )
-			x = x + 1
-		end
-		y = y + 1
-	end
-	return { img = love.graphics.newImage( imageData ), data = imageData }
-end
-function write_tsv_image( filename, imageData )
-	local w, h = imageData:getDimensions()
-	local file = love.filesystem.newFile( filename, "w" )
-	local fileTable = {}
-	for y=0, h - 1 do
-		local line, _ = {}
-		for x=0, w - 1 do
-			local _, _, v = imageData:getPixel( x, y )
-			-- our input only has nine digits, so our output should too
-			line[x] = v==0 and 0 or ("%.9f"):format( v )
-		end
-		fileTable[y] = table.concat( line, '\t', 0 )
-	end
-	assert( file:write( table.concat( fileTable, '\n', 0 ) ) )
+	local tsv = table.concat( fileTable, '\n', 0 )
+	tsv = compression and love.data.compress( "string", compression, tsv )
+					  or  tsv
+	assert( file:write( tsv ) )
 end
 
 function remove_box_from_heatmap( hm, x, y, w, h )
