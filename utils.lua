@@ -34,11 +34,20 @@ do
 	end
 end
 
-function read_tsv_image( filename, width, height, compression )
-	local imageData = love.image.newImageData( width, height, "rgba32f" )
+function read_tsv_image( filename, compression )
 	local file = love.filesystem.read( "string", filename )
 	local tsv = compression and love.data.decompress( "string", compression, file )
 							or  file
+	local w, h = 0, 0
+	for line in tsv:gmatch"(.-)\n" do
+		if h==0 then
+			for val in line:gmatch"%S+" do
+				w = w + 1
+			end
+		end
+		h = h + 1
+	end
+	local imageData = love.image.newImageData( w, h, "rgba32f" )
 	local y = 0
 	for line in tsv:gmatch"(.-)\n" do
 		local x = 0
@@ -51,7 +60,7 @@ function read_tsv_image( filename, width, height, compression )
 		end
 		y = y + 1
 	end
-	return { img = love.graphics.newImage( imageData ), data = imageData }
+	return { img = love.graphics.newImage( imageData ), data = imageData, w = w, h = h }
 end
 function write_tsv_image( filename, imageData, compression )
 	local w, h = imageData:getDimensions()
@@ -72,6 +81,37 @@ function write_tsv_image( filename, imageData, compression )
 	assert( file:write( tsv ) )
 end
 
+function newDataset( dir )
+	local tsvDir = dir .. "_TSV"
+	local filenames = getImages( dir )
+	NUMBER_OF_FILES = #filenames
+	local dataSet_mt = { __index = function( tbl, k )
+		local name = filenames[k]
+		if not name then  return  end
+		local img = love.graphics.newImage( name )
+		local w, h = img:getDimensions()
+		local prefix = name:gsub( dir, tsvDir )
+		local entry = {
+			source = { img = img, w = w, h = h },
+			region   = read_tsv_image( prefix .. "_region.tsv.gz",   "gzip" ),
+			affinity = read_tsv_image( prefix .. "_affinity.tsv.gz", "gzip" ),
+			name = name,
+		}
+		tbl[k] = entry
+		-- only keep the next 10 and last 10 entries in memory
+		tbl[k + 10] = nil
+		tbl[k - 10] = nil
+		return entry
+	end }
+	return setmetatable( {}, dataSet_mt )
+end
+function preload( dataSet, numberOfEntries, startIndex )
+	startIndex = startIndex or 1
+	for i=0, numberOfEntries - 1 do
+		local _ = dataSet[startIndex + i]
+	end
+end
+
 function remove_box_from_heatmap( hm, x, y, w, h )
 	hm.data:mapPixel( function()  return 0, 0, 0, 0.5  end, x, y, w, h )
 	return hm.img:replacePixels( hm.data )
@@ -86,7 +126,7 @@ function apply_threshold_to_imageData( imageData, threshold )
 end
 function deleteBox()  boxX, boxY = nil  end
 function descaleCoordinates( a, ... )
-	if a then  return a/RATIO, descaleCoordinates( ... )  end
+	if a then  return a/hmScale, descaleCoordinates( ... )  end
 end
 function clamp( x, a, b )  return math.min( math.max( x, a ), b )  end
 function processBoxCoordinates( x, y, w, h )

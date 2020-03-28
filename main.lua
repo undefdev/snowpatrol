@@ -5,12 +5,6 @@ function love.load()
 	love.mouse.setVisible( false )
 	t = 0
 	w, h = love.graphics.getDimensions()
-	W = 464
-	H = 640
-	RATIO = h/H
-	img = love.graphics.newImage"test.jpg"
-	heatmap_score = read_tsv_image( "test.tsv", W, H )
-	heatmap_link  = read_tsv_image( "link.tsv", W, H )
 	shader_threshold = love.graphics.newShader"threshold.glsl"
 	shader_red       = love.graphics.newShader"threshold_red.glsl"
 	isShowingImages, isShowingHeatmaps = true, true
@@ -19,47 +13,34 @@ function love.load()
 	shader = shader_threshold
 	shader:send( "threshold", threshold )
 
-	--files = getGZs"japanese_TSV"
-	--files = getImages"japanese"
-	--for _, v in ipairs( files ) do
-	--	print( v )
-	--end
 	dataSet = newDataset"japanese"
-end
+	index = 1
+	-- preload 10 images
+	preload( dataSet, 10, index )
 
-function newDataset( dir )
-	local tsvDir = dir .. "_TSV"
-	local filenames = getImages"japanese"
-	local dataSet = {}
-	for k, name in ipairs( filenames ) do
-		local img = love.graphics.newImage( name )
-		local w, h = img:getDimensions()
-		local prefix = name:gsub( dir, tsvDir )
-		print( k )
-		dataSet[k] = {
-			img = img,
-			--region   = read_tsv_image( prefix .. "_region.tsv.gz",   w, h, "gzip" ),
-			--affinity = read_tsv_image( prefix .. "_affinity.tsv.gz", w, h, "gzip" ),
-			name = name
-		}
+	fetch = function() -- TODO get rid of this and do this in another thread
+		if index%5==0 then  preload( dataSet, 10, index )  end
 	end
-	return dataSet
 end
 
 function love.update( dt )
 	t = t + dt
+	local entry = dataSet[index]
+	hmScale = h/entry.region.h
 end
 
 function love.draw()
-	local he = img:getHeight()
+	local entry = dataSet[index]
+	local secondX = hmScale*entry.region.w
 	if isShowingImages then
-		love.graphics.draw( img, 0, 0, 0, H/he*RATIO, H/he*RATIO )
-		love.graphics.draw( img, W*RATIO, 0, 0, H/he*RATIO, H/he*RATIO )
+		local ratio = h/entry.source.h
+		love.graphics.draw( entry.source.img, 0,       0, 0, ratio, ratio )
+		love.graphics.draw( entry.source.img, secondX, 0, 0, ratio, ratio )
 	end
 	if isShowingHeatmaps then
 		love.graphics.setShader( shader )
-		love.graphics.draw( heatmap_score.img, 0, 0, 0, RATIO, RATIO )
-		love.graphics.draw( heatmap_link.img, RATIO*W, 0, 0, RATIO, RATIO )
+		love.graphics.draw( entry.region.img,   0,       0, 0, hmScale, hmScale )
+		love.graphics.draw( entry.affinity.img, secondX, 0, 0, hmScale, hmScale )
 		love.graphics.setShader()
 	end
 	-- draw the cursor and the boxes
@@ -71,16 +52,15 @@ function love.draw()
 		local boxWidth, boxHeight
 		love.graphics.print( mode[removeMode], mx, my )
 		if boxX then
-  			boxWidth, boxHeight = mx - boxX, my - boxY
+			boxWidth, boxHeight = mx - boxX, my - boxY
 			love.graphics.rectangle( "line", boxX, boxY, boxWidth, boxHeight )
 		end
 		if removeMode==1 or removeMode==3 then
-			local offset = RATIO*W
-			mx_ = mx<=offset and mx + offset or mx - offset
+			mx_ = mx<=secondX and mx + secondX or mx - secondX
 			love.graphics.circle( "fill", mx_, my, 2 )
 			love.graphics.print( mode[removeMode], mx_, my )
 			if boxX then
-				love.graphics.rectangle( "line", boxX + offset, boxY, boxWidth, boxHeight )
+				love.graphics.rectangle( "line", boxX + secondX, boxY, boxWidth, boxHeight )
 			end
 		end
 	end
@@ -95,6 +75,8 @@ keys = {
 		shader = shader==shader_threshold and shader_red or shader_threshold
 		shader:send( "threshold", threshold )
 	end,
+	j = function()  index = math.min( index + 1, NUMBER_OF_FILES ); fetch()  end,
+	k = function()  index = math.max( 1, index - 1 )              ; fetch()  end,
 }
 
 function love.mousepressed( x, y, l, r )
