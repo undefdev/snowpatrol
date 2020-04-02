@@ -11,6 +11,21 @@ function filter( list, filterFunction )
 	return ret
 end
 
+function imap( fun, x )
+	local ret = {}
+	for k, v in ipairs( x ) do
+		ret[k] = fun( v )
+	end
+	return ret
+end
+
+function zipWith( f, a, b )
+	local ret = {}
+	for k, v in ipairs( a ) do
+		ret[k] = f( v, b[k] )
+	end
+end
+
 function deleteBox()  boxX, boxY = nil  end
 
 function descaleCoordinates( a, ... )

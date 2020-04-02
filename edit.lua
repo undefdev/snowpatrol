@@ -1,4 +1,6 @@
 
+local Matrix = require"Matrix"
+
 function remove_box_from_heatmap( hm, x, y, w, h )
 	hm.data:mapPixel( function()  return 0, 0, 0, 0.5  end, x, y, w, h )
 	return hm.img:replacePixels( hm.data )
