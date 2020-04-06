@@ -17,11 +17,8 @@ function love.load()
 	shader:send( "threshold", threshold )
 
 	dataSet = newDataset"japanese"
-	index = 1
-	entry = dataSet[index]
-	hmScale = h/entry.mask.h
 	-- preload 10 images
-	preload( dataSet, 10, index )
+	preload( dataSet, 10 )
 end
 
 function love.update( dt )
@@ -29,6 +26,7 @@ function love.update( dt )
 end
 
 function love.draw()
+	local entry, hmScale = dataSet.entry, dataSet.hmScale
 	if isShowingImages then
 		local ratio = h/entry.source.h
 		love.graphics.draw( entry.source.img, 0, 0, 0, ratio, ratio )

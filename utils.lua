@@ -29,14 +29,15 @@ end
 function deleteBox()  boxX, boxY = nil  end
 
 function descaleCoordinates( a, ... )
-	if a then  return a/hmScale, descaleCoordinates( ... )  end
+	if a then  return a/dataSet.hmScale, descaleCoordinates( ... )  end
 end
 
 function processBoxCoordinates( x, y, w, h )
 	local x, y, w, h = descaleCoordinates( x, y, w, h )
+	local mask = dataSet.entry.mask
 	if w<0 then  x = x + w;  w = -w  end
 	if h<0 then  y = y + h;  h = -h  end
-	x, y = clamp( x, 0, entry.mask.w     ), clamp( y, 0, entry.mask.h     )
-	w, h = clamp( w, 0, entry.mask.w - x ), clamp( h, 0, entry.mask.h - y )
+	x, y = clamp( x, 0, mask.w     ), clamp( y, 0, mask.h     )
+	w, h = clamp( w, 0, mask.w - x ), clamp( h, 0, mask.h - y )
 	return x, y, w, h
 end
