@@ -3,6 +3,7 @@ require"utils"
 require"dataset"
 require"edit"
 require"navigation"
+require"modes"
 
 function love.load()
 	love.mouse.setVisible( false )
@@ -36,24 +37,12 @@ function love.draw()
 		love.graphics.draw( entry.mask.img, 0, 0, 0, hmScale, hmScale )
 		love.graphics.setShader()
 	end
-	-- draw the cursor and the boxes
-	local mx, my = love.mouse.getPosition()
-	love.graphics.setColor( 1, 0.5, 0 )
-	love.graphics.circle( "fill", mx, my, 2 )
-	if removeMode then
-		local boxWidth, boxHeight
-		love.graphics.print( "removing", mx, my )
-		if boxX then
-			boxWidth, boxHeight = mx - boxX, my - boxY
-			love.graphics.rectangle( "line", boxX, boxY, boxWidth, boxHeight )
-		end
-	end
-	love.graphics.setColor( 1, 1, 1 )
+	mode.draw()
 end
 
 keys = {
 	escape = love.event.quit,
-	r = function()  removeMode = not removeMode;  if not removeMode then  deleteBox()  end  end,
+	r = function()  setMode"remove"  end,
 	space = function()  isShowingImages = not isShowingImages  end,
 	m = function()  isShowingHeatmap = not isShowingHeatmap  end,
 	tab = function()
@@ -65,12 +54,9 @@ keys = {
 }
 
 function love.mousepressed( x, y, l, r )
-	if not removeMode then  return  end
-	if not boxX then
-		boxX, boxY = x, y
-		return
+	if mode.mousepressed then
+		return mode.mousepressed( x, y, l, r )
 	end
-	return removeBox( boxX, boxY, x - boxX, y - boxY )
 end
 
 function love.keypressed( k )

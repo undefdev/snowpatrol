@@ -26,8 +26,6 @@ function zipWith( f, a, b )
 	end
 end
 
-function deleteBox()  boxX, boxY = nil  end
-
 function descaleCoordinates( a, ... )
 	if a then  return a/dataSet.hmScale, descaleCoordinates( ... )  end
 end

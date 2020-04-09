@@ -17,8 +17,6 @@ end
 
 function removeBox( x, y, w, h )
 	local x, y, w, h = processBoxCoordinates( x, y, w, h )
-	if w==0 or h==0 then  return deleteBox() end
-	hm = entry.mask
-	remove_box_from_heatmap( hm, x, y, w, h )
-	deleteBox()
+	if w==0 or h==0 then  return  end
+	remove_box_from_heatmap( dataSet.entry.mask, x, y, w, h )
 end
