@@ -12,7 +12,6 @@ function love.load()
 	shader_threshold = love.graphics.newShader"threshold.glsl"
 	shader_red       = love.graphics.newShader"threshold_red.glsl"
 	isShowingImages, isShowingHeatmap = true, true
-	removeMode = false
 	threshold = 0.01
 	shader = shader_threshold
 	shader:send( "threshold", threshold )

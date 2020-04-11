@@ -20,3 +20,13 @@ function removeBox( x, y, w, h )
 	if w==0 or h==0 then  return  end
 	remove_box_from_heatmap( dataSet.entry.mask, x, y, w, h )
 end
+
+function addMean( x, y )
+	local dists = mode.data
+	dists[#dists + 1] = { mean = { x, y } }
+end
+-- TODO find better name
+function addPrincipalComponent( x, y )
+	local dist = mode.data[#mode.data]
+	dist[#dist + 1] = { x - dist.mean[1], y - dist.mean[2] }
+end

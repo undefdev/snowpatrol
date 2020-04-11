@@ -39,3 +39,18 @@ function processBoxCoordinates( x, y, w, h )
 	w, h = clamp( w, 0, mask.w - x ), clamp( h, 0, mask.h - y )
 	return x, y, w, h
 end
+
+function dist( x1, y1, x2, y2 )
+	local dx, dy = x2 - x1, y2 - y1
+	return (dx^2 + dy^2)^(1/2)
+end
+function strokedLine( x1, y1, x2, y2 )
+	local d = dist( x1, y1, x2, y2 )
+	local l = h/100
+	local dx, dy = l*(x2 - x1)/d, l*(y2 - y1)/d
+	for i=0, d/l do
+		if i%2==0 then
+			love.graphics.line( x1 + dx*i, y1 + dy*i, x1 + dx*(i+1), y1 + dy*(i+1) )
+		end
+	end
+end

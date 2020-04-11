@@ -34,6 +34,31 @@ local modes = {
 			setMode"default"
 		end,
 	},
+	markCharacter = {
+		draw = function()
+			drawCursor()
+			local dists = mode.data
+			for k, dist in ipairs( dists ) do
+				local x, y = dist.mean[1], dist.mean[2]
+				love.graphics.circle( "line", x, y, h/100 )
+				if k==#dists and #dist<2 then
+					local mx, my = love.mouse.getPosition()
+					local dx, dy = mx - x, my - y
+					strokedLine( x - dx, y - dy, mx, my )
+				end
+				for _, vec in ipairs( dist ) do
+					love.graphics.line( x, y, x + vec[1], y + vec[2] )
+				end
+			end
+		end,
+		mousepressed = function( x, y, l, r )
+			local dists = mode.data
+			if #dists==0 or #dists[#dists]==2 then
+				return addMean( x, y )
+			end
+			return addPrincipalComponent( x, y )
+		end,
+	},
 }
 
 function setMode( m )
@@ -41,3 +66,4 @@ function setMode( m )
 	mode.data = {}
 end
 setMode"default"
+setMode"markCharacter"
